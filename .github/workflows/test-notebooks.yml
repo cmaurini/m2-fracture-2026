@@ -145,11 +145,32 @@ jobs:
           docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
             python tools/check_notebooks.py executed/*.ipynb
 
+      - name: Publish the image
+        # Only from main, and only below this line: what Binder and Codespaces
+        # pull is an image the notebooks have just run in. It is pushed before
+        # the Binder image is built on top of it, because `.binder/Dockerfile`
+        # starts FROM this published tag: gated behind that build, the first
+        # run could never publish the image that build needs.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker tag $IMAGE:$TAG $IMAGE:sha-${GITHUB_SHA::7}
+          docker push $IMAGE:$TAG
+          docker push $IMAGE:sha-${GITHUB_SHA::7}
+
       # The Binder image is this one plus a user and the repository, so it is
       # built here too: the badge in the README is then a link that has been
       # launched, not a hope.
       - name: Build the Binder image on top of it
+        # On the default builder, the one backed by the docker daemon: the base
+        # image is then the one built above, taken from the local store instead
+        # of pulled from ghcr.io, and the image repo2docker produces is left
+        # where the next step can run it. repo2docker passes neither --load nor
+        # --push, so on the container driver of setup-buildx-action the result
+        # would stay in the build cache and the run below would find nothing.
         run: |
+          docker buildx use default
           python -m pip install --quiet jupyter-repo2docker
           jupyter-repo2docker --no-run --image-name m2fr-binder .
 
@@ -162,16 +183,6 @@ jobs:
                        --output-dir executed linear-elasticity/*.ipynb \
                      && python tools/check_notebooks.py executed/*.ipynb"
 
-      - name: Publish the image
-        # Only from main, and only below this line: what Binder and Codespaces
-        # pull is an image the notebooks have just run in.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker tag $IMAGE:$TAG $IMAGE:sha-${GITHUB_SHA::7}
-          docker push $IMAGE:$TAG
-          docker push $IMAGE:sha-${GITHUB_SHA::7}
 
       - uses: actions/upload-artifact@v7
         if: always()
