@@ -7,13 +7,10 @@ Finite element notebooks for the joint Master course in fracture mechanics of
 Sorbonne Université (MU5MES02 / MEC_53642_EP). They run on
 [DOLFINx](https://github.com/FEniCS/dolfinx) **0.11.0**.
 
-Course webpage, with schedule, rooms, references and communication channels:
-**https://codimd.math.cnrs.fr/qdH2bbTLRlSejoiLoA3I9Q**
-
 ## Install
 
-The notebooks need DOLFINx 0.11, gmsh, PyVista and JupyterLab. Follow the
-instructions and run the self-test at
+The notebooks need DOLFINx 0.11, gmsh, PyVista, scifem and JupyterLab. Follow
+the instructions and run the self-test at
 
 **https://github.com/cmaurini/fenicsx-install**
 
@@ -22,23 +19,34 @@ environment named `fenicsx-0.11`, which is the one used here.
 
 ## Run
 
+Register the environment once as a Jupyter kernel:
+
+```bash
+conda activate fenicsx-0.11
+python -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
+```
+
+`make kernel` does the same. The notebooks ask for that kernel by name, so from
+then on they open on the right environment by themselves, whichever environment
+JupyterLab was started from.
+
 ```bash
 git clone https://github.com/cmaurini/m2-fracture-2026.git
 cd m2-fracture-2026
-conda activate fenicsx-0.11
 jupyter lab
 ```
 
-Open `linear-elasticity/00-Mesh.ipynb` and run the cells. The notebooks import
-their helper modules from `utils/` through a relative path, so run them from
-their own directory — opening them in JupyterLab does this for you.
+Open `linear-elasticity/00-Mesh.ipynb` and run the cells. The kernel shown in
+the top right corner should read *FEniCSx 0.11*. The notebooks import their
+helper modules from `utils/` through a relative path, so run them from their
+own directory — opening them in JupyterLab does this for you.
 
 ## Contents
 
 | Notebook | What it does |
 |---|---|
 | [`linear-elasticity/00-Mesh.ipynb`](linear-elasticity/00-Mesh.ipynb) | Builds the mesh of a cracked slab with gmsh, refines it at the crack tip, imports it into DOLFINx, plots it with PyVista and saves it to XDMF. |
-| [`linear-elasticity/01-LinearElasticity.ipynb`](linear-elasticity/01-LinearElasticity.ipynb) | Solves plane-stress linear elasticity on that mesh, computes the potential energy and the von Mises stress, and plots the deformed configuration. |
+| [`linear-elasticity/01-LinearElasticity.ipynb`](linear-elasticity/01-LinearElasticity.ipynb) | Solves plane-stress linear elasticity on that mesh, computes the potential energy and the von Mises stress, plots the deformed configuration, and plots the crack opening and $\sigma_{yy}$ along the line $y=0$. |
 
 The geometry is half of an elastic slab with a straight crack, the half being
 taken by symmetry:
@@ -52,6 +60,13 @@ Helper modules, imported by the notebooks:
 | [`utils/meshes.py`](utils/meshes.py) | `generate_mesh_with_crack`, the mesh of `00-Mesh` as a function. |
 | [`utils/plots.py`](utils/plots.py) | `warp_plot_2d`, a PyVista plot of a field on the deformed mesh. |
 | [`utils/elastic_solver.py`](utils/elastic_solver.py) | `solve_elasticity`, the whole of `01-LinearElasticity` as a function, returning the displacement, the potential energy and the stress. |
+
+Evaluating a field at a set of points — a plot along a line, a value at the
+crack tip — is done with
+[`scifem.evaluate_function`](https://scientificcomputing.github.io/scifem/),
+which is part of the installed environment. It works in serial and in parallel,
+and replaces the hand-written point-evaluation helpers of earlier versions of
+these notebooks.
 
 Results are written to `linear-elasticity/output/`, in a form
 [ParaView](https://www.paraview.org/) reads.

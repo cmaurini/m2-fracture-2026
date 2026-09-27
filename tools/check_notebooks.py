@@ -12,15 +12,17 @@ import re
 import sys
 from pathlib import Path
 
-# Per notebook: the minimum number of rendered images, and the printed
-# quantities with the value expected on a correct run.
+# Per notebook: the minimum number of rendered figures, PyVista's and
+# matplotlib's alike, and the printed quantities with the value expected on a
+# correct run.
 EXPECTED = {
     "00-Mesh.ipynb": {"images": 1, "values": {}},
     "01-LinearElasticity.ipynb": {
-        "images": 2,
+        "images": 3,
         "values": {
             r"The potential energy is\s+(-?[\d.eE+-]+)": -7.577e-01,
             r"The potential energy for Lcrack=[\d.eE+-]+ is\s+(-?[\d.eE+-]+)": -4.174e-01,
+            r"Half opening at the crack mouth: u_y\(0,0\) =\s+(-?[\d.eE+-]+)": 1.6960,
         },
     },
 }
@@ -58,7 +60,7 @@ def check(path):
     if images < spec["images"]:
         failures.append(
             f"{name}: {images} rendered image(s), expected at least "
-            f"{spec['images']} — pyvista did not draw"
+            f"{spec['images']} — a figure was not drawn"
         )
 
     joined = "\n".join(text)

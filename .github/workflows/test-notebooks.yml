@@ -59,8 +59,14 @@ jobs:
 
       - name: Report versions
         run: |
-          conda list "fenics-dolfinx|gmsh|pyvista|jupyterlab"
+          conda list "fenics-dolfinx|gmsh|pyvista|scifem|jupyterlab"
           python -c "import dolfinx; assert dolfinx.__version__.startswith('0.11'), dolfinx.__version__"
+          python -c "import scifem; print('scifem', scifem.__version__)"
+
+      - name: Register the kernel the notebooks ask for
+        run: |
+          python -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
+          jupyter kernelspec list
 
       - name: Run the notebooks
         # Not PYVISTA_OFF_SCREEN: the notebooks skip plotting when it is set,
@@ -100,10 +106,17 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             libgl1-mesa-dev libxrender1 libxcursor1 xvfb
-          python3 -m pip install --no-cache-dir vtk "pyvista[all]>=0.48" gmsh
+          python3 -m pip install --no-cache-dir vtk "pyvista[all]>=0.48" gmsh scifem
 
       - name: Report versions
-        run: python3 -c "import dolfinx; print(dolfinx.__version__)"
+        run: |
+          python3 -c "import dolfinx; print('dolfinx', dolfinx.__version__)"
+          python3 -c "import scifem; print('scifem', scifem.__version__)"
+
+      - name: Register the kernel the notebooks ask for
+        run: |
+          python3 -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
+          jupyter kernelspec list
 
       - name: Run the notebooks
         run: |
