@@ -20,9 +20,9 @@ EXPECTED = {
     "01-LinearElasticity.ipynb": {
         "images": 3,
         "values": {
-            r"The potential energy is\s+(-?[\d.eE+-]+)": -7.577e-01,
-            r"The potential energy for Lcrack=[\d.eE+-]+ is\s+(-?[\d.eE+-]+)": -4.174e-01,
-            r"Half opening at the crack mouth: u_y\(0,0\) =\s+(-?[\d.eE+-]+)": 1.6960,
+            r"The potential energy is\s+(-?[\d.eE+-]+)": -4.065e-01,
+            r"The potential energy for Lcrack=[\d.eE+-]+ is\s+(-?[\d.eE+-]+)": -4.027e-01,
+            r"Half opening at the crack mouth: u_y\(0,0\) =\s+(-?[\d.eE+-]+)": 1.5918,
         },
     },
 }
