@@ -20,5 +20,5 @@ check:
 	python tools/check_notebooks.py executed/*.ipynb
 
 clean:
-	rm -rf executed linear-elasticity/.ipynb_checkpoints
+	rm -rf executed linear-elasticity/.ipynb_checkpoints utils/__pycache__
 	find linear-elasticity/output -type f ! -name .gitkeep -delete
