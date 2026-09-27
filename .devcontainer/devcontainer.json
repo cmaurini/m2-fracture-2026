@@ -1,0 +1,24 @@
+// GitHub Codespaces, and VS Code's "Reopen in Container".
+//
+// The same image Binder runs, built by CI from the environment file of the
+// installation instructions, so that the two cannot drift apart.
+{
+  "name": "DOLFINx 0.11 — fracture 2026",
+  "image": "ghcr.io/cmaurini/m2-fracture-2026:env-0.11",
+
+  // Codespaces replaces the image entrypoint, and a codespace is stopped and
+  // restarted, so the X server PyVista draws on is started here instead.
+  "postStartCommand": "nohup Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 &",
+  "containerEnv": { "DISPLAY": ":99" },
+
+  "remoteUser": "root",
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-toolsai.jupyter", "ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/conda/envs/fenicsx-0.11/bin/python"
+      }
+    }
+  }
+}

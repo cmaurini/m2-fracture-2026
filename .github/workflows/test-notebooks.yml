@@ -68,6 +68,9 @@ jobs:
           python -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
           jupyter kernelspec list
 
+      - name: Check the environment carries what it promises
+        run: python tools/check_environment.py environment.yml
+
       - name: Run the notebooks
         # Not PYVISTA_OFF_SCREEN: the notebooks skip plotting when it is set,
         # and the point of this job is to check that the figures come out.
@@ -94,40 +97,84 @@ jobs:
             executed/
             linear-elasticity/output/
 
-  docker:
-    name: docker / dolfinx lab image
+  image:
+    name: image / online environment (Codespaces, Binder)
     runs-on: ubuntu-latest
-    container: ghcr.io/fenics/dolfinx/lab:v0.11.0
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      TAG: env-0.11
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install the packages the image does not carry
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            libgl1-mesa-dev libxrender1 libxcursor1 xvfb
-          python3 -m pip install --no-cache-dir vtk "pyvista[all]>=0.48" gmsh scifem
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the image students launch
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: ${{ env.IMAGE }}:${{ env.TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Report versions
         run: |
-          python3 -c "import dolfinx; print('dolfinx', dolfinx.__version__)"
-          python3 -c "import scifem; print('scifem', scifem.__version__)"
+          docker run --rm $IMAGE:$TAG python -c "import dolfinx; assert dolfinx.__version__.startswith('0.11'), dolfinx.__version__; print('dolfinx', dolfinx.__version__)"
+          docker run --rm $IMAGE:$TAG python -c "import scifem; print('scifem', scifem.__version__)"
+          docker run --rm $IMAGE:$TAG jupyter kernelspec list
 
-      - name: Register the kernel the notebooks ask for
+      - name: Check the environment carries what it promises
+        # Against the environment file baked into the image, so that a package
+        # added to the installation instructions and missing here fails now.
         run: |
-          python3 -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
-          jupyter kernelspec list
+          docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
+            python tools/check_environment.py
 
-      - name: Run the notebooks
+      - name: Run the notebooks in it
         run: |
-          xvfb-run -a jupyter nbconvert --to notebook --execute \
-            --output-dir executed linear-elasticity/*.ipynb
+          docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
+            bash -c "jupyter nbconvert --to notebook --execute \
+                       --output-dir executed linear-elasticity/*.ipynb"
 
       - name: Check what the run produced
-        run: python3 tools/check_notebooks.py executed/*.ipynb
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
+            python tools/check_notebooks.py executed/*.ipynb
+
+      # The Binder image is this one plus a user and the repository, so it is
+      # built here too: the badge in the README is then a link that has been
+      # launched, not a hope.
+      - name: Build the Binder image on top of it
+        run: |
+          python -m pip install --quiet jupyter-repo2docker
+          jupyter-repo2docker --no-run --image-name m2fr-binder .
+
+      - name: Run the notebooks in the Binder image, under Binder's memory cap
+        # 2 GB is what mybinder.org gives a session. A notebook that needs more
+        # must fail here rather than in front of the class.
+        run: |
+          docker run --rm --memory=2g m2fr-binder \
+            bash -c "jupyter nbconvert --to notebook --execute \
+                       --output-dir executed linear-elasticity/*.ipynb \
+                     && python tools/check_notebooks.py executed/*.ipynb"
+
+      - name: Publish the image
+        # Only from main, and only below this line: what Binder and Codespaces
+        # pull is an image the notebooks have just run in.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker tag $IMAGE:$TAG $IMAGE:sha-${GITHUB_SHA::7}
+          docker push $IMAGE:$TAG
+          docker push $IMAGE:sha-${GITHUB_SHA::7}
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: executed-docker
+          name: executed-image
           path: executed/

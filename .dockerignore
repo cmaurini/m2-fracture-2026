@@ -1,0 +1,10 @@
+# Keep the image the students launch free of what a local run leaves behind.
+# linear-elasticity/output/ itself is kept: the notebooks write into it and do
+# not create it.
+.git
+.DS_Store
+executed/
+**/__pycache__/
+**/.ipynb_checkpoints/
+linear-elasticity/output/*.xdmf
+linear-elasticity/output/*.h5
