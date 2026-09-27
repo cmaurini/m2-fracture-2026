@@ -1,0 +1,21 @@
+# results written by the notebooks
+linear-elasticity/output/*
+!linear-elasticity/output/.gitkeep
+executed/
+*.xdmf
+*.h5
+*.png
+!linear-elasticity/domain.png
+!docs/*.png
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# environment file pulled in by CI from the installation repository
+/environment.yml
+
+# macOS
+.DS_Store

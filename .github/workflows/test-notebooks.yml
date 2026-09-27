@@ -1,0 +1,120 @@
+name: Run the notebooks
+
+# Runs the notebooks the way a student runs them, in the environment the
+# installation instructions produce, so that breakage in upstream packages
+# shows up here rather than in the lecture hall.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1"   # every Monday morning, before the lecture
+
+jobs:
+  conda:
+    name: conda / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      # GitHub's Azure runners expose an RDMA device (mana_0) that MPICH's UCX
+      # layer tries to open and fails on, aborting MPI_Init. Confine UCX to
+      # loopback. This is a property of the runner, not of the installation.
+      UCX_TLS: tcp,self,sm
+      UCX_NET_DEVICES: lo
+    defaults:
+      run:
+        shell: bash -el {0}   # -l so that conda activation is picked up
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install OpenGL and off-screen rendering support (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          # libosmesa6 is what lets VTK render with no display at all. Without
+          # it VTK falls through X, then EGL, then segfaults.
+          sudo apt-get install -y libgl1 libglx-mesa0 libosmesa6 libxrender1 libxcursor1 xvfb
+
+      - name: Fetch the environment file from the installation instructions
+        # The environment is not defined here: it is the one students install
+        # by following https://github.com/cmaurini/fenicsx-install, and this
+        # job must fail if the notebooks stop working in it.
+        run: |
+          curl -sSfL -o environment.yml \
+            https://raw.githubusercontent.com/cmaurini/fenicsx-install/main/environment.yml
+          cat environment.yml
+
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          environment-file: environment.yml
+          activate-environment: fenicsx-0.11
+          channel-priority: strict
+          conda-remove-defaults: "true"   # keep conda-forge the only channel
+
+      - name: Report versions
+        run: |
+          conda list "fenics-dolfinx|gmsh|pyvista|jupyterlab"
+          python -c "import dolfinx; assert dolfinx.__version__.startswith('0.11'), dolfinx.__version__"
+
+      - name: Run the notebooks
+        # Not PYVISTA_OFF_SCREEN: the notebooks skip plotting when it is set,
+        # and the point of this job is to check that the figures come out.
+        run: |
+          RUN=""
+          [ "${{ runner.os }}" = "Linux" ] && RUN="xvfb-run -a"
+          $RUN jupyter nbconvert --to notebook --execute \
+            --output-dir executed linear-elasticity/*.ipynb
+
+      - name: Check what the run produced
+        run: python tools/check_notebooks.py executed/*.ipynb
+
+      - name: Check the result files were written
+        run: |
+          test -s linear-elasticity/output/mesh.xdmf
+          test -s linear-elasticity/output/elasticity-demo.xdmf
+          test -s linear-elasticity/output/elasticity-demo.h5
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: executed-conda-${{ matrix.os }}
+          path: |
+            executed/
+            linear-elasticity/output/
+
+  docker:
+    name: docker / dolfinx lab image
+    runs-on: ubuntu-latest
+    container: ghcr.io/fenics/dolfinx/lab:v0.11.0
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the packages the image does not carry
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            libgl1-mesa-dev libxrender1 libxcursor1 xvfb
+          python3 -m pip install --no-cache-dir vtk "pyvista[all]>=0.48" gmsh
+
+      - name: Report versions
+        run: python3 -c "import dolfinx; print(dolfinx.__version__)"
+
+      - name: Run the notebooks
+        run: |
+          xvfb-run -a jupyter nbconvert --to notebook --execute \
+            --output-dir executed linear-elasticity/*.ipynb
+
+      - name: Check what the run produced
+        run: python3 tools/check_notebooks.py executed/*.ipynb
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: executed-docker
+          path: executed/
