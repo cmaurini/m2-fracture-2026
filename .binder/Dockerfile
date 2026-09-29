@@ -16,7 +16,16 @@ ENV USER=${NB_USER} \
     NB_UID=${NB_UID} \
     HOME=/home/${NB_USER}
 
-RUN adduser --disabled-password --gecos "Default user" --uid ${NB_UID} ${NB_USER}
+# condaforge/miniforge3 is built on Ubuntu, and the Ubuntu base image already
+# holds uid 1000, with a user named `ubuntu`: adduser stops there on
+# "The UID 1000 is already in use." Hand that uid over to ${NB_USER}. Whoever
+# holds it is looked up rather than assumed, because repo2docker run by hand
+# builds with the uid of the person running it, which is usually free.
+RUN existing=$(getent passwd ${NB_UID} | cut -d: -f1); \
+    if [ -n "${existing}" ] && [ "${existing}" != root ]; then \
+        userdel "${existing}" && rm -rf "/home/${existing}"; \
+    fi \
+ && adduser --disabled-password --gecos "Default user" --uid ${NB_UID} ${NB_USER}
 
 # repo2docker builds from the repository root even though this file lives in
 # .binder/, so this copies the whole repository.

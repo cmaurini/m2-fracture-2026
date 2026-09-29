@@ -27,7 +27,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # UCX above: MPICH's UCX layer tries to open any RDMA device it sees and
 # aborts MPI_Init when it cannot. Confine it to loopback, as CI does on the
 # Azure runners.
-# adduser: the Debian base underneath no longer carries it, and
+# adduser: the Ubuntu base underneath no longer carries it, and
 # .binder/Dockerfile creates the unprivileged user Binder runs as with it.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
