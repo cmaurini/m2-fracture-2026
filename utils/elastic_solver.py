@@ -29,6 +29,9 @@ def solve_elasticity(
     refinement_ratio=10,
     dist_min=0.2,
     dist_max=0.3,
+    graded=True,
+    grade=5.0,
+    degree=1,
     verbosity=10,
 ):
     msh, cell_tags, facet_tags = generate_mesh_with_crack(
@@ -37,11 +40,13 @@ def solve_elasticity(
         Ly=Ly,
         lc=lc,  # caracteristic length of the mesh
         refinement_ratio=refinement_ratio,  # how much it is refined at the tip zone
+        graded=graded,  # size growing with the distance to the tip
+        grade=grade,  # slope r/h of the graded field
         dist_min=dist_min,  # radius of tip zone
         dist_max=dist_max,  # radius of the transition zone
         verbosity=verbosity,
     )
-    V = fem.functionspace(msh, ("Lagrange", 1, (2,)))
+    V = fem.functionspace(msh, ("Lagrange", degree, (2,)))
 
     # the ligament ahead of the tip, the crack tip itself included: a facet is
     # selected only if all its vertices satisfy this, so the tolerance is what

@@ -25,6 +25,28 @@ EXPECTED = {
             r"Half opening at the crack mouth: u_y\(0,0\) =\s+(-?[\d.eE+-]+)": 1.5918,
         },
     },
+    "02-Singularities.ipynb": {
+        "images": 1,
+        "values": {
+            # the largest displacement, bounded and mesh-insensitive, unlike
+            # the stress at the crack tip and at the sharp shoulder
+            r"max \|u\| =\s+([\d.eE+-]+)": 0.0428,
+        },
+    },
+    "03-LEFM.ipynb": {
+        "images": 8,
+        "values": {
+            # K_I read on the plateau of the crack opening, and the same read
+            # on the stress, which is the coarser of the two
+            r"K_I from the COD is\s+([\d.eE+-]+)": 1.7027,
+            r"K_I from the stress is\s+([\d.eE+-]+)": 1.6478,
+            # the energy release rate, three ways: Irwin from the COD, a
+            # finite difference in the crack length, and the domain derivative
+            r"ERR estimate is\s+([\d.eE+-]+)": 2.8991,
+            r"The ERR by finite differences is\s+([\d.eE+-]+)": 2.9415,
+            r"The ERR computed with the G-theta method is\s+([\d.eE+-]+)": 2.9661,
+        },
+    },
 }
 
 # The mesh depends on the gmsh version, so the energies move a little from one
