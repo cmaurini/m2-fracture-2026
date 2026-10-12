@@ -83,6 +83,10 @@ jobs:
       - name: Check what the run produced
         run: python tools/check_notebooks.py executed/*.ipynb
 
+      - name: Check the homework modules
+        # The starter has blank cells and cannot run; its modules can.
+        run: python tools/check_homework.py
+
       - name: Check the result files were written
         run: |
           test -s linear-elasticity/output/mesh.xdmf
@@ -144,6 +148,11 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
             python tools/check_notebooks.py executed/*.ipynb
+
+      - name: Check the homework modules
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work $IMAGE:$TAG \
+            python tools/check_homework.py
 
       - name: Publish the image
         # Only from main, and only below this line: what Binder and Codespaces

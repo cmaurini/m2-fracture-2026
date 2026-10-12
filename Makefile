@@ -15,18 +15,22 @@ NOTEBOOKS := $(wildcard linear-elasticity/*.ipynb)
 
 IMAGE := ghcr.io/cmaurini/m2-fracture-2026:env-0.11
 
-.PHONY: kernel test run check image binder clean
+.PHONY: kernel test run check homework image binder clean
 
 kernel:
 	python -m ipykernel install --user --name fenicsx-0.11 --display-name "FEniCSx 0.11"
 
-test: run check
+test: run check homework
 
 run:
 	jupyter nbconvert --to notebook --execute --output-dir executed $(NOTEBOOKS)
 
 check:
 	python tools/check_notebooks.py executed/*.ipynb
+
+# The homework starter has blank cells and is not run: its modules are.
+homework:
+	python tools/check_homework.py
 
 image:
 	docker build -f docker/Dockerfile -t $(IMAGE) .
