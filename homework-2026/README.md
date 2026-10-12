@@ -1,5 +1,7 @@
 # Homework 2026: the DCDC test
 
+See https://codimd.math.cnrs.fr/qdH2bbTLRlSejoiLoA3I9Q?both#Homework-2026-the-DCDC-test for the instructions
+
 [`hw2026.pdf`](hw2026.pdf) is the subject.
 
 [`hw2026.ipynb`](hw2026.ipynb) is the starting notebook of the homework. It
