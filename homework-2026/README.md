@@ -1,5 +1,7 @@
 # Homework 2026: the DCDC test
 
+[`hw2026.pdf`](hw2026.pdf) is the subject.
+
 [`hw2026.ipynb`](hw2026.ipynb) is the starting notebook of the homework. It
 meshes one quarter of the DCDC specimen, solves the elastic problem, plots the
 opening and the stress along the crack line, and computes $G$ by the G-theta
